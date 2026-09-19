@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AUDRT — Noise Reduction + Pitch Correction VST3</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #E8A0B4; --panel: #CC7A9A; --purple: #B882E8;
+      --dark-purple: #9B6BC4; --ink: #18101E; --btn: #F0A8C8;
+      --btn-hover: #F8C0D8; --white: #ffffff; --green: #44FF88;
+      --font: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    }
+    body { background: var(--bg); color: var(--ink); font-family: var(--font); overflow-x: hidden; }
+
+    nav {
+      background: var(--panel); border-bottom: 2px solid var(--ink);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px; height: 64px; position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo { font-size: 26px; font-weight: 900; color: var(--ink); text-decoration: none; }
+    .nav-logo span { font-size: 11px; display: block; opacity: 0.65; margin-top: -3px; }
+    .nav-links { display: flex; gap: 10px; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: var(--ink); font-weight: 700; font-size: 13px;
+      padding: 7px 18px; border: 2px solid var(--ink); border-radius: 999px;
+      background: var(--btn); transition: background 0.15s;
+    }
+    .nav-links a:hover { background: var(--btn-hover); }
+    .nav-links a.cta { background: var(--ink); color: var(--btn); }
+
+    .hero {
+      display: grid; grid-template-columns: 1fr 1fr; align-items: center;
+      gap: 40px; max-width: 1100px; margin: 0 auto; padding: 70px 40px 50px;
+    }
+    h1 { font-size: clamp(44px, 7vw, 76px); font-weight: 900; line-height: 1; letter-spacing: -2px; }
+    h1 span { display: block; font-size: 16px; font-weight: 700; opacity: 0.6; margin-top: 4px; letter-spacing: 0; }
+    .tagline { margin: 18px 0 28px; font-size: 16px; line-height: 1.6; opacity: 0.8; max-width: 440px; }
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+    .badge { padding: 5px 13px; border: 2px solid var(--ink); border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--btn); }
+    .btn-dl {
+      display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px;
+      background: var(--ink); color: var(--btn); font-size: 16px; font-weight: 800;
+      border: 2px solid var(--ink); border-radius: 999px; text-decoration: none;
+      box-shadow: 4px 4px 0 var(--ink); transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .btn-dl:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .btn-sec {
+      display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;
+      background: var(--btn); color: var(--ink); font-size: 14px; font-weight: 700;
+      border: 2px solid var(--ink); border-radius: 999px; text-decoration: none;
+      margin-left: 12px; box-shadow: 3px 3px 0 var(--ink); transition: transform 0.12s;
+    }
+    .btn-sec:hover { transform: translate(-1px,-1px); }
+
+    .hero-visual {
+      background: var(--panel); border: 2px solid var(--ink); border-radius: 18px;
+      padding: 18px; box-shadow: 8px 8px 0 var(--ink);
+    }
+    .mock-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .mock-title { font-size: 20px; font-weight: 900; }
+    .mock-sub { font-size: 9px; opacity: 0.6; }
+    .mock-pills { display: flex; gap: 6px; }
+    .pill { padding: 4px 14px; background: var(--btn); border: 2px solid var(--ink); border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .pill.on { background: var(--ink); color: var(--btn); }
+    .mock-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+    .mock-card { background: var(--bg); border: 2px solid var(--ink); border-radius: 10px; padding: 10px; }
+    .mock-card.purp { background: var(--purple); }
+    .mock-lbl { font-size: 9px; font-weight: 700; opacity: 0.55; margin-bottom: 6px; }
+    .mock-tog { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+    .t-dot { width: 28px; height: 16px; background: var(--ink); border-radius: 999px; position: relative; flex-shrink: 0; }
+    .t-dot::after { content:''; position: absolute; right: 2px; top: 2px; width: 10px; height: 10px; background: var(--btn); border-radius: 50%; }
+    .t-dot.off { background: var(--bg); }
+    .mock-knob { width: 48px; height: 48px; background: var(--ink); border-radius: 50%; outline: 5px dotted rgba(24,16,30,0.25); outline-offset: 3px; margin: 6px auto; display: flex; align-items: center; justify-content: center; }
+    .k-dot { width: 7px; height: 7px; background: var(--btn); border-radius: 50%; margin-top: -10px; }
+    .mock-wave { height: 44px; }
+    .mock-wave svg { width: 100%; height: 100%; }
+    .mock-pitch { height: 26px; background: var(--dark-purple); border-radius: 6px; position: relative; margin-top: 6px; }
+    .p-needle { position: absolute; left: 50%; top: 3px; transform: translateX(-50%); width: 5px; height: calc(100% - 6px); background: var(--green); border-radius: 3px; }
+
+    .section { max-width: 1100px; margin: 0 auto; padding: 60px 40px; }
+    .s-title { font-size: 34px; font-weight: 900; margin-bottom: 6px; }
+    .s-sub { font-size: 14px; opacity: 0.6; margin-bottom: 36px; }
+
+    .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; }
+    .feat-card {
+      background: var(--panel); border: 2px solid var(--ink); border-radius: 18px;
+      padding: 24px 20px; box-shadow: 4px 4px 0 var(--ink); transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .feat-card:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .feat-icon { font-size: 28px; margin-bottom: 10px; }
+    .feat-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+    .feat-card p { font-size: 13px; line-height: 1.55; opacity: 0.7; }
+
+    .install-wrap { background: var(--panel); border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; counter-reset: steps; }
+    .step {
+      background: var(--btn); border: 2px solid var(--ink); border-radius: 14px;
+      padding: 20px 16px; position: relative; box-shadow: 3px 3px 0 var(--ink); counter-increment: steps;
+    }
+    .step::before {
+      content: counter(steps); position: absolute; top: -11px; left: 14px;
+      background: var(--ink); color: var(--btn); font-size: 11px; font-weight: 900;
+      width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    }
+    .step h4 { font-size: 14px; font-weight: 800; margin-bottom: 5px; }
+    .step p { font-size: 12px; line-height: 1.5; opacity: 0.72; }
+    .step code { display: block; background: var(--ink); color: var(--btn); font-family: 'Courier New', monospace; font-size: 10px; padding: 7px 9px; border-radius: 7px; margin-top: 7px; word-break: break-all; }
+
+    .comments-wrap { background: var(--purple); border-top: 2px solid var(--ink); }
+    .c-form {
+      background: var(--dark-purple); border: 2px solid var(--ink); border-radius: 18px;
+      padding: 24px; margin-bottom: 28px; box-shadow: 4px 4px 0 var(--ink);
+    }
+    .f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .fg { display: flex; flex-direction: column; gap: 5px; }
+    .fg.full { grid-column: 1/-1; }
+    .fg label { font-size: 11px; font-weight: 700; color: var(--white); letter-spacing: 0.4px; }
+    .fg input, .fg textarea, .fg select {
+      padding: 11px 14px; border: 2px solid var(--ink); border-radius: 10px;
+      font-size: 13px; font-family: var(--font); background: var(--btn); color: var(--ink); outline: none;
+    }
+    .fg textarea { resize: vertical; min-height: 100px; }
+    .btn-sub {
+      padding: 12px 32px; background: var(--ink); color: var(--btn); font-size: 14px;
+      font-weight: 800; border: 2px solid var(--ink); border-radius: 999px; cursor: pointer;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.35); transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .btn-sub:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 rgba(0,0,0,0.35); }
+    .ok-msg { display: none; background: var(--green); color: var(--ink); font-weight: 700; font-size: 13px; padding: 10px 18px; border-radius: 10px; border: 2px solid var(--ink); margin-top: 10px; }
+
+    .c-list { display: flex; flex-direction: column; gap: 14px; }
+    .c-card { background: var(--dark-purple); border: 2px solid var(--ink); border-radius: 14px; padding: 18px 20px; box-shadow: 3px 3px 0 var(--ink); }
+    .c-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .c-av { width: 34px; height: 34px; border-radius: 50%; background: var(--btn); border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 13px; color: var(--ink); flex-shrink: 0; }
+    .c-name { font-weight: 800; font-size: 13px; color: var(--white); }
+    .c-date { font-size: 10px; color: rgba(255,255,255,0.5); }
+    .c-tag { margin-left: auto; padding: 2px 9px; border: 1.5px solid var(--btn); border-radius: 999px; font-size: 9px; font-weight: 700; color: var(--btn); }
+    .c-body { font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.85); }
+    .c-likes { margin-top: 10px; }
+    .like-btn { background: none; border: 1.5px solid rgba(255,255,255,0.35); border-radius: 999px; padding: 3px 11px; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.12s; }
+    .like-btn:hover, .like-btn.liked { background: var(--btn); color: var(--ink); border-color: var(--btn); }
+
+    footer { background: var(--ink); color: var(--btn); text-align: center; padding: 28px 20px; font-size: 12px; }
+    footer .fl { font-size: 22px; font-weight: 900; margin-bottom: 5px; }
+    footer a { color: var(--btn); font-weight: 700; }
+
+    @media (max-width: 700px) {
+      .hero { grid-template-columns: 1fr; padding: 36px 18px 24px; }
+      .hero-visual { display: none; }
+      .f-row { grid-template-columns: 1fr; }
+      nav { padding: 0 14px; }
+      .section { padding: 36px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">AUDRT <span>By Meharish</span></a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#install">Install</a></li>
+    <li><a href="#suggestions">Suggestions</a></li>
+    <li><a href="#download" class="cta">Download</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <h1>AUDRT <span>By Meharish</span></h1>
+    <p class="tagline">A free VST3 plugin for macOS that removes background noise and corrects pitch in real-time — all in one clean plugin.</p>
+    <div class="badges">
+      <span class="badge">VST3</span>
+      <span class="badge">macOS 12+</span>
+      <span class="badge">Ableton 12</span>
+      <span class="badge">Free</span>
+      <span class="badge">JUCE 8</span>
+    </div>
+    <a href="https://github.com/meharish/audrt/releases/latest/download/AUDRT.vst3.zip" class="btn-dl" id="download">&#11015; Download AUDRT</a>
+    <a href="https://github.com/meharish/audrt" class="btn-sec" target="_blank">View on GitHub</a>
+    <p style="margin-top:12px;font-size:11px;opacity:0.5;">v1.0 &middot; macOS 12+ &middot; VST3 &middot; Free forever</p>
+  </div>
+
+  <div class="hero-visual">
+    <div class="mock-bar">
+      <div><div class="mock-title">AUDRT</div><div class="mock-sub">By Meharish</div></div>
+      <div class="mock-pills"><div class="pill on">Live</div><div class="pill">Audio</div></div>
+    </div>
+    <div class="mock-grid">
+      <div>
+        <div class="mock-card" style="margin-bottom:8px">
+          <div class="mock-tog"><div class="t-dot"></div>Noise Reduction</div>
+          <div class="mock-lbl">CAPTURE NOISE</div>
+          <div style="display:flex;gap:5px;margin-bottom:6px;">
+            <div style="background:var(--btn);border:1.5px solid var(--ink);border-radius:999px;padding:3px 10px;font-size:10px;font-weight:700;">Capture</div>
+            <div style="background:var(--bg);border:1.5px solid var(--ink);border-radius:999px;padding:3px 8px;font-size:10px;font-weight:700;">Stop</div>
+          </div>
+          <div class="mock-knob"><div class="k-dot"></div></div>
+          <div style="text-align:center;font-size:9px;font-weight:700;opacity:0.6;">Mix</div>
+        </div>
+        <div class="mock-card">
+          <div class="mock-tog"><div class="t-dot off"></div>Pitch Correction</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span style="font-size:10px;font-weight:700;">Key</span>
+            <div style="background:var(--btn);border:1.5px solid var(--ink);border-radius:999px;padding:3px 10px;font-size:10px;font-weight:700;">C v</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;font-weight:700;">Scale</span>
+            <div style="background:var(--btn);border:1.5px solid var(--ink);border-radius:999px;padding:3px 6px;font-size:10px;font-weight:700;">Major v</div>
+          </div>
+          <div class="mock-knob" style="width:38px;height:38px;margin-top:6px;"><div class="k-dot"></div></div>
+          <div style="text-align:center;font-size:9px;font-weight:700;opacity:0.6;">Mix</div>
+        </div>
+      </div>
+      <div>
+        <div class="mock-card purp" style="margin-bottom:8px;">
+          <div class="mock-lbl">LIVE WAVEFORM</div>
+          <div class="mock-wave">
+            <svg viewBox="0 0 200 44" preserveAspectRatio="none">
+              <polyline points="0,22 10,8 20,28 30,15 40,24 50,6 60,30 70,18 80,26 90,10 100,22 110,33 120,14 130,25 140,8 150,28 160,19 170,32 180,12 190,23 200,22" fill="none" stroke="#18101E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="mock-card purp">
+          <div style="display:flex;justify-content:space-between;font-size:8px;font-weight:700;opacity:0.7;margin-bottom:3px;"><span>-12</span><span>0</span><span>+12</span></div>
+          <div class="mock-pitch"><div class="p-needle"></div></div>
+          <div style="text-align:center;font-size:9px;font-weight:700;margin-top:5px;opacity:0.7;">In Tune</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <h2 class="s-title">What AUDRT does</h2>
+  <p class="s-sub">Everything you need to clean up vocals in one lightweight VST3.</p>
+  <div class="feat-grid">
+    <div class="feat-card"><div class="feat-icon">&#127897;</div><h3>Live Noise Capture</h3><p>Record a few seconds of ambient silence. AUDRT builds a noise profile and subtracts it from your audio using spectral subtraction.</p></div>
+    <div class="feat-card"><div class="feat-icon">&#127926;</div><h3>File-Based Profile</h3><p>Already have a silence recording? Load it as WAV, AIFF or FLAC and AUDRT will use that as the noise floor reference.</p></div>
+    <div class="feat-card"><div class="feat-icon">&#127931;</div><h3>Noise Mix Knob</h3><p>Dial in exactly how much noise to cut — 10% for gentle softening up to 100% aggressive removal. Start around 50%.</p></div>
+    <div class="feat-card"><div class="feat-icon">&#127908;</div><h3>Pitch Correction</h3><p>Auto-tune vocals to the nearest note in any key and scale — Major, Minor, Pentatonic, Blues, or Chromatic.</p></div>
+    <div class="feat-card"><div class="feat-icon">&#127754;</div><h3>Live Waveform</h3><p>Watch your audio come in live as a waveform. Confirm the plugin is receiving signal and monitor levels at a glance.</p></div>
+    <div class="feat-card"><div class="feat-icon">&#128207;</div><h3>Pitch Meter</h3><p>A real-time cents display shows how far your pitch is from the target. Green = in tune, red = off pitch.</p></div>
+    <div class="feat-card"><div class="feat-icon">&#128190;</div><h3>Preset Save / Load</h3><p>Save your settings as XML presets and reload them anytime. Perfect for switching between mics or rooms.</p></div>
+    <div class="feat-card"><div class="feat-icon">&#9889;</div><h3>Latency Control</h3><p>Four latency modes let you trade CPU usage for response time — Ultra Low for live performance, High for resource-limited sessions.</p></div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<div class="install-wrap" id="install">
+  <section class="section">
+    <h2 class="s-title">How to install</h2>
+    <p class="s-sub">Works with Ableton Live 12 and any VST3-compatible DAW on macOS.</p>
+    <div class="steps">
+      <div class="step"><h4>Download the zip</h4><p>Click Download above or visit GitHub Releases to get <code>AUDRT.vst3.zip</code></p></div>
+      <div class="step"><h4>Unzip it</h4><p>Double-click the zip. You'll see a folder called <code>AUDRT.vst3</code> — this is the plugin bundle.</p></div>
+      <div class="step"><h4>Move to VST3 folder</h4><p>Move the entire folder here:<code>~/Library/Audio/Plug-Ins/VST3/</code></p></div>
+      <div class="step"><h4>Rescan in Ableton</h4><p>Preferences → Plug-ins → click Rescan. AUDRT appears in your VST3 library.</p></div>
+      <div class="step"><h4>Load &amp; go</h4><p>Drag AUDRT onto a track. Click Live → Capture Noise and you're ready.</p></div>
+    </div>
+  </section>
+</div>
+
+<!-- SUGGESTIONS -->
+<div class="comments-wrap" id="suggestions">
+  <section class="section">
+    <h2 class="s-title" style="color:white;">Suggestions &amp; Feedback</h2>
+    <p class="s-sub" style="color:rgba(255,255,255,0.7);">Got an idea for the next update? Found a bug? Drop it below.</p>
+
+    <div class="c-form">
+      <form id="cForm" onsubmit="postComment(event)">
+        <div class="f-row">
+          <div class="fg"><label>Your Name</label><input type="text" id="cName" placeholder="e.g. Alex" required /></div>
+          <div class="fg"><label>Type</label>
+            <select id="cType">
+              <option>Feature Request</option>
+              <option>Bug Report</option>
+              <option>General Feedback</option>
+              <option>Question</option>
+            </select>
+          </div>
+        </div>
+        <div class="f-row">
+          <div class="fg full"><label>Your Message</label><textarea id="cMsg" placeholder="Tell me what you think or what you'd love to see added..." required></textarea></div>
+        </div>
+        <button type="submit" class="btn-sub">Post Suggestion</button>
+        <div class="ok-msg" id="okMsg">Thanks! Your suggestion has been posted.</div>
+      </form>
+    </div>
+
+    <div class="c-list" id="cList">
+      <div class="c-card">
+        <div class="c-head">
+          <div class="c-av">J</div>
+          <div><div class="c-name">James K.</div><div class="c-date">August 2026</div></div>
+          <div class="c-tag">Feature Request</div>
+        </div>
+        <div class="c-body">Would love a built-in EQ section after the noise reduction — even a simple 3-band would make this the only plugin I need for voice cleanup.</div>
+        <div class="c-likes"><button class="like-btn" onclick="doLike(this)">&#9829; 12</button></div>
+      </div>
+      <div class="c-card">
+        <div class="c-head">
+          <div class="c-av">S</div>
+          <div><div class="c-name">Sara M.</div><div class="c-date">August 2026</div></div>
+          <div class="c-tag">General Feedback</div>
+        </div>
+        <div class="c-body">The pitch meter is incredibly useful for live singing. Clean design too — the pink theme looks really good in Ableton's dark interface.</div>
+        <div class="c-likes"><button class="like-btn" onclick="doLike(this)">&#9829; 8</button></div>
+      </div>
+      <div class="c-card">
+        <div class="c-head">
+          <div class="c-av">R</div>
+          <div><div class="c-name">Rahul D.</div><div class="c-date">August 2026</div></div>
+          <div class="c-tag">Feature Request</div>
+        </div>
+        <div class="c-body">Any plans for a Windows version? Would love to use AUDRT on PC.</div>
+        <div class="c-likes"><button class="like-btn" onclick="doLike(this)">&#9829; 5</button></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="fl">AUDRT</div>
+  <p style="opacity:0.55;margin-bottom:7px;">By Meharish &middot; VST3 for macOS &middot; Built with JUCE 8 &middot; Free &amp; Open Source</p>
+  <p><a href="https://github.com/meharish/audrt" target="_blank">GitHub</a> &nbsp;&middot;&nbsp; <a href="#suggestions">Leave Feedback</a></p>
+</footer>
+
+<script>
+function postComment(e) {
+  e.preventDefault();
+  const name = document.getElementById('cName').value.trim();
+  const type = document.getElementById('cType').value;
+  const msg  = document.getElementById('cMsg').value.trim();
+  if (!name || !msg) return;
+  const list = document.getElementById('cList');
+  const now  = new Date().toLocaleDateString('en-GB', { month:'long', year:'numeric' });
+  const card = document.createElement('div');
+  card.className = 'c-card';
+  card.innerHTML = `
+    <div class="c-head">
+      <div class="c-av">${esc(name).charAt(0).toUpperCase()}</div>
+      <div><div class="c-name">${esc(name)}</div><div class="c-date">${now}</div></div>
+      <div class="c-tag">${esc(type)}</div>
+    </div>
+    <div class="c-body">${esc(msg)}</div>
+    <div class="c-likes"><button class="like-btn" onclick="doLike(this)">&#9829; 0</button></div>`;
+  list.insertBefore(card, list.firstChild);
+  document.getElementById('cForm').reset();
+  const ok = document.getElementById('okMsg');
+  ok.style.display = 'block';
+  setTimeout(() => ok.style.display = 'none', 3000);
+}
+function doLike(btn) {
+  const n = parseInt(btn.textContent.replace(/\D/g,'')) || 0;
+  const on = btn.classList.toggle('liked');
+  btn.innerHTML = '&#9829; ' + (on ? n+1 : n-1);
+}
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior:'smooth' }); }
+  });
+});
+</script>
+</body>
+</html>
